@@ -1,3 +1,6 @@
+#Data too big or github
+data/
+
 # History files
 .Rhistory
 .Rapp.history
@@ -16,7 +19,7 @@
 
 # RStudio files
 .Rproj.user/
-
+*.Rproj
 # produced vignettes
 vignettes/*.html
 vignettes/*.pdf
@@ -231,3 +234,4 @@ TSWLatexianTemp*
 
 # auto folder when using emacs and auctex 
 /auto/*
+.Rproj.user
