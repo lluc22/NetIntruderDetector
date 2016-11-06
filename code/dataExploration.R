@@ -55,3 +55,4 @@ levels(netData[,"logged_in"]) <- c(F,T)
 levels(netData[,"is_guest_login"]) <- c(F,T)
 
 summary(netData)
+attach(netData)
