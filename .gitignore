@@ -1,6 +1,6 @@
 #Data too big or github
 data/
-
+graphs/
 # History files
 .Rhistory
 .Rapp.history

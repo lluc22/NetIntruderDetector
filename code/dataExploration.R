@@ -5,15 +5,16 @@
 # to do preprocessing, feature extraction/selection, clustering
 # and visualitzation.
 #
-# Authors: Lluc Bov? and Aleix Trasserra
+# Authors: Lluc Bové and Aleix Trasserra
 # Autumn 2016
 ####################################################################
+
 
 ####################################################################
 # PREPROCESSING 
 ####################################################################
 
-netData <- read.csv("data/initialData.csv", header=FALSE, quote="") 
+netData <- read.csv("data/complete", header=FALSE, quote="") 
 
 dim(netData)
 
@@ -44,7 +45,7 @@ categoricalVars.index <- which(colnames(netData) %in% categoricalVars)
 
  #We can remmove "is_host_login" since its values are all the same
 netData <- netData[,-21]
-categoricalVars <- c("attack_type","protocol_type","service","flag","land","logged_in","is_guest_login")
+categoricalVars <- c("attack_type","protocol_type","service","flag","land","root_shell","su_attempted","logged_in","is_guest_login")
 
 #All Categorical as factors
 netData[categoricalVars] <- lapply(netData[categoricalVars],factor)
@@ -53,6 +54,158 @@ netData[categoricalVars] <- lapply(netData[categoricalVars],factor)
 levels(netData[,"land"]) <- c(F,T)
 levels(netData[,"logged_in"]) <- c(F,T)
 levels(netData[,"is_guest_login"]) <- c(F,T)
-
+levels(netData[,"root_shell"]) <- c(F,T)
 summary(netData)
+
+
+table(netData$su_attempted)
+#In the metadata description tells su_attempted is a boolean, then what is 2?
+#We might consider NA and delete rows, first let's see which atacks include
+
+table(netData$attack_type[netData$su_attempted == 2])
+
+#Since all normal connections, and they are the most, we will consider incorrect value's and delete them
+netData <- netData[netData$su_attempted != 2,]
+dim(netData)
+
+#and we categorize it again
+netData$su_attempted <- factor(netData$su_attempted)
+(levels(netData[,"su_attempted"]) <- c(F,T))
+
+#Let's analyze numerical variables
+summary(netData[,!(colnames(netData) %in% categoricalVars)])
+
+#We don't see anything anormal. Some variables have a lot of 0's but they are well accounted so they aren't NA's
+
+####################################################################
+# FEATURE EXTRACTION/SELECTION
+####################################################################
+
+#We introduce a new categorical variable: main_attack. In this category we generalize attack_type as follows:
+# - dos: back,land,neptune,smurf,teardrop
+# - u2r: buffer_overflow,loadmodule,perl,rootkit
+# - r2l: ftp_write,guess_passwd,imap,multihop,phf,spy,warezclient,warezmaster
+# - probe: ipsweep,nmap,portsweep,satan
+# This variable is an alternative objective variable t2 to the original t variable attack_type.
+
+main_attack <- as.character(netData$attack_type)
+main_attack <-replace(main_attack,main_attack %in% c("back","land","neptune","pod","smurf","teardrop"),"dos")
+main_attack <-replace(main_attack,main_attack %in% c("buffer_overflow","loadmodule","perl","rootkit"),"u2r")
+main_attack <-replace(main_attack,main_attack %in% c("ftp_write","guess_passwd","imap","multihop","phf","spy","warezclient","warezmaster"),"r2l")
+main_attack <-replace(main_attack,main_attack %in% c("ipsweep","nmap","portsweep","satan"),"probe")
+table(main_attack)
+netData[,42] <- factor(main_attack)
+colnames(netData)[42] <- "main_attack"
+
+####################################################################
+# Plots
+####################################################################
+library(ggplot2)
+
+#Several useful functions...
+
+hist.with.normal <- function (x, main="", xlabel=deparse(substitute(x)),path, ...)
+{
+  h <- hist(x,plot=F, ...)
+  s <- sd(x)
+  m <- mean(x)
+  ylim <- range(0,h$density,dnorm(0,sd=s))
+  p <- ggplot(data.frame(f = x),aes(x)) + 
+    geom_histogram(aes(y = ..density..)) + 
+    stat_function(fun=function(x) dnorm(x,m,s), colour = "red") +
+    xlab(xlabel) +
+    ggtitle(main)
+  ggsave(file=path,plot = p)
+}
+
+save.boxplot <- function(x,main="",ylabel=deparse(substitute(x)),path, ...){
+  p <- ggplot(data.frame(f = x),aes(x="",y=x)) + 
+    geom_boxplot() + 
+    theme(axis.title.x = element_blank()) +
+    ggtitle(main) +
+    ylab(ylabel)
+  ggsave(file=path,plot = p)
+}
+
+barplot.percent <- function(df,df.x,df.y,main="",xlabel=deparse(substitute(df.x)),ylabel=deparse(substitute(df.y))){
+  library(reshape2)
+  library(scales)
+  DF1 <- melt(prop.table(table(df.x,df.y), 2), id.var=xlabel)
+  p <- ggplot(DF1, aes(x=df.x,y=value,fill=df.y)) + 
+    geom_bar(position = "fill",stat = "identity") + 
+    xlab(xlabel) +
+    ylab("percent") +
+    scale_y_continuous(labels = percent_format()) +
+    ggtitle(main)
+  print(p)
+  
+}
+
+
+barplot.facet <- function(df,df.x,df.y,main="",xlabel=deparse(substitute(df.x)),ylabel=deparse(substitute(df.y))){
+  library(reshape2)
+  DF1 <- melt(prop.table(table(df.x,df.y), 2), id.var=xlabel)
+  p <- ggplot(DF1, aes(df.x,y=value)) + geom_bar(stat="identity") +
+    facet_wrap(~ df.y) +
+    ggtitle(main)
+  print(p)
+}
+
+categoricalVars <- c(categoricalVars,"main_attack")
+numericalVars <- colnames(netData)[!(colnames(netData) %in% categoricalVars)]
+
+
+#For every numerical, do a histogram and a boxplot with: 
+# The original data
+# The original data != 0
+# log(data + 1)
+# log(data +1 ) != 0
+#This is because many data have a lot of 0 values(for example boolean values that are rare)
+#And it may help to vizualize plots without them.
+#Also we apply a log transformation that may help us too.
+#This may take a while...
+#(It is saved as file because they are a plenty of numerical variables)
+for (i in numericalVars){
+  print(i)
+  x <- netData[,i]
+  x.nonZero <- x[x!=0]
+  x.log <- log(x + 1)
+  x.logNonZero <- log(x.nonZero + 1)
+  
+  hist.with.normal(x,path=paste("graphs/",i,".png",sep=""),main=paste("Histogram of",i),xlabel = i)
+  hist.with.normal(x.nonZero,path=paste("graphs/",i,"_nonZero",".png",sep=""),main=paste("Histogram of non-zero",i),xlabel= paste("non-zero",i))
+  hist.with.normal(x.log,path=paste("graphs/",i,"log",".png",sep=""),paste("Histogram of log",i),xlabel= paste("log",i))
+  hist.with.normal(x.logNonZero,path=paste("graphs/",i,"log_nonZero",".png",sep=""),main=paste("Histogram of non-zero log",i),xlabel= paste("non-zero log",i))
+  
+  save.boxplot(x,path=paste("graphs/Box_",i,".png",sep=""),main=paste("Boxplot of",i),ylabel = i)
+  save.boxplot(x.nonZero,path=paste("graphs/Box_",i,"_nonZero",".png",sep=""),main=paste("Boxplot of non-zero",i),ylabel= paste("non-zero",i))
+  save.boxplot(x.log,path=paste("graphs/Box_",i,"log",".png",sep=""),main=paste("Boxplot of log",i),ylabel= paste("log",i))
+  save.boxplot(x.logNonZero,path=paste("graphs/Box_",i,"log_nonZero",".png",sep=""),main=paste("Boxplot of non-zero log",i),ylabel= paste("non-zero log",i))
+  
+}
+
+
+#Bar charts for qualitative....
+for(i in categoricalVars){
+  p <- ggplot(netData,aes_string(i)) + geom_bar() + coord_flip() + ggtitle(paste("barplot of"),i)
+  print(p)
+}
+
 attach(netData)
+#Some contingency tables
+(t.att.protocol <- prop.table(table(main_attack,protocol_type), 2))
+(t.att.service <- prop.table(table(main_attack,service), 2)) 
+(t.att.flag <- prop.table(table(main_attack,flag), 2) ) 
+(t.att.su <-prop.table(table(main_attack,su_attempted), 2) ) 
+
+####################################################################
+# Save final preprocessed data
+####################################################################
+netData.preprocessed <- netData[,colnames(netData)!= "attack_type"]
+netData.preprocessed <- netData.preprocessed[sample.int(nrow(netData.preprocessed)),]
+netData <- netData[sample.int(nrow(netData)),]
+
+
+
+
+
