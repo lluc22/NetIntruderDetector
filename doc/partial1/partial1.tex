@@ -6,6 +6,7 @@
 \documentclass[a4paper]{article} %Article class
 \usepackage[utf8]{inputenc} %utf-8 Encoding
 \usepackage{graphicx} % Required for the inclusion of images
+\usepackage{float} %requiered for image positioning
 \graphicspath{{Figures/}} % Set the default folder for images
 \usepackage{amsmath} % Required for some math elements 
 \usepackage[english]{babel} % Language 
@@ -133,8 +134,55 @@ Now we have this categorization so we don't need attack type any more but we sav
 
 
 \subsection{Descriptive Analysis}
-We'll proceed to do a descriptive analysis of our data. To make our graphs more beautiful we use \textit{ggplot2}\cite{ggplot}. For every numerical variable we do a histogram and a boxplot. We realize that most variables don't have any.
+We'll proceed to do a descriptive analysis of our data. To make our graphs more beautiful we use \textit{ggplot2}\cite{ggplot}. For every numerical variable we do a histogram and a boxplot. We realize that the median of many variables is 0, that is, half of the data is zero. This is because some variables are TCP camps that hardly ever are used but when are used they are important. Another cause is that many variables depend on if the communication is between the host and the server or the server and the host. This is why we want to show this variables without including the zero's. We also applied a $log$ transformation. Now we will show some of this plots:\\
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.25]{duration.png}
+	\caption{This figure shows descriptive graphs for the duration variable}
+	\label{fig:duration}
+\end{figure}
+
+Figure \ref{fig:duration} shows the boxplot and histogram for the variable \textit{duration}, that is the duration of the TCP connection. We can see that most TCP connections have a duration lower than zero. This causes that histogram and boxplot are difficult to visualize. If we don't display the zero's we fix this. This variable also is advantaged by a $log$ transformation. \\
+
+Many variables have the same structure as the ones before so we don't include them in this analysis. The next thing that we'll do is the descriptive analysis plots for the qualitative variables. We analyse them using contingency tables and bar plots.
+
+Figure \ref{fig:barplots} shows a barplot for main attack variable. We want to emphasize that it has an unequal distribution. Most connections are DOS attacks, followed by normal and then probe. R2L and U2L are in a tiny proportion.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.5]{bar_main_attack.png}
+	\caption{Barplot for main attack}
+	\label{fig:barplots}
+\end{figure}
+We made contingency tables from some of the most relevant variables, against the main attack variable. This variables are protocol, flags, service and superuser attempted. Figure \ref{fig:cont} shows the result. 
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.85]{cont.png}
+	\caption{Contingency tables represented }
+	\label{fig:cont}
+\end{figure}
+
+We can observe that for example, DOS attacks and normal connections have similar flags, in probe attacks the flag \textit{RESET} is very often, and in \textit{U2R} it predominates \textit{REJ}. In all types of connections the protocols used are similar. The services are almost the same with normal connections, DOS and PROBE attacks. They differ with the R2L and U2L attacks and the service that predominates in U2L is \textit{eco\_i}. The only tpye of connection that does request super user is DOS attacks.
 \subsection{Visualization}
+To do visualization we use the Fisher Discriminant Analysis or FDA. We apply it using only numerical variables and our classes are the different values of main attack. The visualization of the first two components can be observed in figure \ref{fig:fda}.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.45]{LDA.png}
+	\caption{Barplots for all categorical variables}
+	\label{fig:fda}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.45]{LDA_log.png}
+	\caption{Barplots for all categorical variables}
+	\label{fig:fda_log}
+\end{figure}
+The classes don't seem very separated. In fact, if we didn't use colours we wouldn't have seen the classes separated. This indicates us that the prediction task can be a big challenge. We decided to apply logarithms to all the variables and try the analysis again, the result is in \ref{fig:fda_log}. This representation is slightly better but not very good though. The trace of the two first components sum 98.49\%, and without the $log$ 98.02\%. So this projection is more accurate with 2 dimensions. 
+
 \subsection{Clustering}
 In this section we'll perform a clustering analysis in order to see natural groupings of data in our dataset.  \\
 We'll use \textit{k-means} algorithm to perform clustering process. Our goal is to see what number of clusters gives us a better explanation of natural groupings in our dataset. \\
@@ -156,18 +204,21 @@ The following figures contains the plots that shows the result of the experiment
 As we can see, Calinski-Harabasz index indicates that better number of clusters is 50 but on the other hand likelihood index indicates that 48 is the best number of clusters. \\
 Although we may consider that the best number of clusters is in range between 48 and 50 clusters, if we compare the behavior of the two index, it is clear that it is quite different. \\
 We don't know the reason of these different behaviors, but we think that with more executions it could be solved due to random initialization of k-means algorithm leads the index to take unsual values.
-\begin{figure}
+\begin{figure}[H]
+	\centering
 	\label{calinski}
-\includegraphics[scale = 0.75]{../../plots/Calinski}
+\includegraphics[scale = 0.25]{../../plots/Calinski}
 	\caption{Number of clusters vs Calinski-Harabasz index}
 \end{figure}
 
 
-\begin{figure}
+\begin{figure}[H]
+	\centering
 	\label{likelihood}
-	\includegraphics[scale = 0.75]{../../plots/likelihood}
+	\includegraphics[scale = 0.25]{../../plots/likelihood}
 	\caption{Number of clusters vs likelihood index}
 \end{figure}
+
 
 %----------------------------------------------------------------------------------------
 %	BIBLIOGRAPHY
