@@ -14,7 +14,7 @@
 # PREPROCESSING 
 ####################################################################
 
-netData <- read.csv("data/complete", header=FALSE, quote="") 
+netData <- read.csv("data/initialData10.csv", header=FALSE, quote="") 
 
 dim(netData)
 
