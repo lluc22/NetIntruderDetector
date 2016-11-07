@@ -7,13 +7,18 @@
 \usepackage[utf8]{inputenc} %utf-8 Encoding
 \usepackage{graphicx} % Required for the inclusion of images
 \graphicspath{{Figures/}} % Set the default folder for images
-\usepackage{natbib} % Required to change bibliography style to APA
 \usepackage{amsmath} % Required for some math elements 
 \usepackage[english]{babel} % Language 
 \setlength\parindent{0pt} % Removes all indentation from paragraphs
 \usepackage{xcolor}	
 \usepackage{listings} %Requiered for code inclusion
 \renewcommand{\labelenumi}{\alph{enumi}.} % Make numbering in the enumerate environment by letter rather than number (e.g. section 6)
+\usepackage[
+backend=biber,
+style=alphabetic,
+sorting=ynt
+]{biblatex}
+\addbibresource{sample.bib}
 
 \usepackage{color}
 \lstset{ %
@@ -78,20 +83,44 @@ Universitat Politècnica de Barcelona} % Title
 %----------------------------------------------------------------------------------------
 
 \section{Data Exploration Process}
-In this section we will take a first look to our data, in order to know what are we going to analyse. First we'll preprocess it, this includes detecting outliers, missing values... And deleting them. Then we are going to perform a feature extraction and selection. This consists in deleting variables that aren't necessary and deriving new ones. Then we'll visualize our data using FDA and finally we'll do a clustering. All this process can be followed using the script provided called \textit{dataExploration.R}
+In this section we will take a first look to our data, in order to know what are we going to analyse. First we'll preprocess it, this includes detecting outliers, missing values... And deleting them. Then we are going to perform a feature extraction and selection. This consists in deleting variables that aren't necessary and deriving new ones. Then we'll visualize our data using FDA and finally we'll do a clustering. All this process can be followed using the script provided called \textit{dataExploration.R}.\\
+
 \subsection{Preprocessing}
+The original data has two forms. The first one has a dimension of 5 million rows approximately and the other is a reduction of 10\%. We assured that this purge didn't affect the proportion of less used attack types, and it didn't, so from now on we will work with this reduction.\\
+
+First of all when we analyse our dataset we see that variables have no name, so we name them. Then we execute \lstinline|summary| to detect abnormal things on our data, like strange means, medians, extreme values, errors... So we first realize that our categorical variables aren't factors, and they have no text. To solve this first we declare all categorical as factors and we use \lstinline|TRUE| and \lstinline|FALSE| for boolean ones, and we use names for the others. We realize that some variables do not vary so we delete them. We detected an error with a boolean factor, it had missing values so we deleted the rows.
+
+
 \subsection{Feature extraction/selection}
+First we need to define the target variable. We decide to use the main attack in the network. This is a category for each attack type. The variable is defined as table \ref{table:main} shows. 
+\begin{table}
+	\begin{tabular}{ll}
+		Main Attack & Attack Type                                                            \\ \hline
+		DOS         & back, land, neptune, smurf, teardrop                                       \\
+		U2R         & buffer overflow, loadmodule, perl, rootkit                               \\
+		R2L         & ftp\_write, guess password, imap, multihop, phf, spy, warezclient, warezmaster \\
+		probe       & ipsweep, nmap, portsweep, satan                                           \\
+		normal      & normal                                                                 \\
+	\end{tabular}
+	\caption{This table shows the main attack classification}
+	\label{table:main}
+	
+\end{table}
+Now we have this categorization so we don't need attack type any more but we save it because it may be a useful alternative target respect main attack. 
+
+
+\subsection{Descriptive Analysis}
+We'll proceed to do a descriptive analysis of our data. To make our graphs more beautiful we use \textit{ggplot2}\cite{ggplot}. For every numerical variable we do a histogram and a boxplot. We realize that most variables don't have any.
 \subsection{Visualization}
 \subsection{Clustering}
 
 
+\medskip
 %----------------------------------------------------------------------------------------
 %	BIBLIOGRAPHY
 %----------------------------------------------------------------------------------------
 
-\bibliographystyle{apalike}
-
-\bibliography{sample}
+\printbibliography
 
 %----------------------------------------------------------------------------------------
 

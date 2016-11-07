@@ -11,7 +11,7 @@
 
 
 ####################################################################
-#                       PREPROCESSING     
+#                       -PREPROCESSING-     
 ####################################################################
 
 netData <- read.csv("data/initialData.csv", header=FALSE, quote="") 
@@ -106,11 +106,19 @@ testData$num_outbound_cmds <- NULL
 ####################################################################
 
 #We introduce a new categorical variable: main_attack. In this category we generalize attack_type as follows:
-# - dos: back,land,neptune,smurf,teardrop
-# - u2r: buffer_overflow,loadmodule,perl,rootkit
-# - r2l: ftp_write,guess_passwd,imap,multihop,phf,spy,warezclient,warezmaster
-# - probe: ipsweep,nmap,portsweep,satan
-# This variable is an alternative objective variable t2 to the original t variable attack_type.
+#  +-------------+------------------------------------------------------------------------+
+#  | Main Attack | Attack Type                                                            |
+#  +=============+========================================================================+
+#  | DOS         | back,land,neptune,smurf,teardrop                                       |
+#  +-------------+------------------------------------------------------------------------+
+#  | U2R         | buffer_overflow,loadmodule,perl,rootkit                                |
+#  +-------------+------------------------------------------------------------------------+
+#  | R2L         | ftp_write,guess_passwd,imap,multihop,phf,spy,warezclient,warezmaster   |
+#  +-------------+------------------------------------------------------------------------+
+#  | probe       | ipsweep,nmap,portsweep,satan                                           |
+#  +-------------+------------------------------------------------------------------------+
+#  | normal      | normal                                                                 |
+#  +-------------+------------------------------------------------------------------------+
 
 main_attack <- as.character(netData$attack_type)
 main_attack <-replace(main_attack,main_attack %in% c("back","land","neptune","pod","smurf","teardrop"),"dos")
