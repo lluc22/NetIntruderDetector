@@ -337,5 +337,52 @@ plot3d(loadings.log[,1], loadings.log[,2], loadings.log[,3], "LD1", "LD2", "LD3"
 legend3d("topright",legend=levels(main_attack),pch = 16, col = palette(), cex=1, inset=c(0.02))
 
 
+####################################################################
+# CLUSTERING
+####################################################################
 
+
+index.K <- function(Kaux,ind){ ### AQUI has de tocar
+  CH.K <- 0
+  for (i in 1:2) {
+    kmeans.K <- cclust (as.matrix(numericalVariables),Kaux,iter.max=100,method="kmeans",dist="euclidean")
+    (CH.K = CH.K + clustIndex(kmeans.K,numericalVariables, index=ind)) ## aqui has de canviar l'index
+  }
+  return(CH.K)
+}
+############## Calinski-Harabasz #####################
+
+#res contains means of k-means executions for each value K
+res <- vector("numeric",12)
+res[2] = index.K(40,"calinski")/2
+res[3] = index.K(41,,"calinski")/2
+res[4] = index.K(42,"calinski")/2
+res[5] = index.K(43,"calinski")/2
+res[6] = index.K(44,"calinski")/2
+res[7] = index.K(45,"calinski")/2
+res[8] = index.K(46,"calinski")/2
+res[9] = index.K(47,"calinski")/2
+res[10] = index.K(48,"calinski")/2
+res[11] = index.K(49,"calinski")/2
+res[12] = index.K(50,"calinski")/2
+
+plot(labels,res,type = "l", ylab = "Calinski-Harabasz", xlab = "clusters", main = "Number of clusters vs Calinski-Harabasz index")
+
+############## likelihood #####################
+
+# resl contains means of k-means executions for each value K
+resl <- vector("numeric",12)
+resl[2] = index.K(40,"likelihood")/2
+resl[3] = index.K(41,"likelihood")/2
+resl[4] = index.K(42,"likelihood")/2
+resl[5] = index.K(43,"likelihood")/2
+resl[6] = index.K(44,"likelihood")/2
+resl[7] = index.K(45,"likelihood")/2
+resl[8] = index.K(46,"likelihood")/2
+resl[9] = index.K(47,"likelihood")/2
+resl[10] = index.K(48,"likelihood")/2
+resl[11] = index.K(49,"likelihood")/2
+resl[12] = index.K(50)/2
+labels <- c(40:51)
+plot(labels,resl,type = "l", ylab = "likelihood", xlab="clusters", main = "Number of clusters vs likelihood index")
 

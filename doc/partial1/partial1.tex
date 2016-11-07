@@ -71,13 +71,36 @@ Universitat Politècnica de Barcelona} % Title
 %----------------------------------------------------------------------------------------
 
 \section{Introduction}
+In the are of \textit{computer security}, one of the current works is to protect computer networks from unauthorized users. \\
+The goal of this work is to build a system capable of predict if a connection is an \textit{intrussion} ()and which kind of intrussion) or if it is a normal connection.  
 \subsection{The data}
+Our dataset is a set of \textbf{connection records}.
+A \textbf{connection} is a set of TCP packets starting and ending at some well defined times, between which data flows from a \textit{source IP} address to a \textit{target IP} address under some well defined \textit{protocol}.
+There are four main attack categories which the system have to identify apart from \textit{normal connections}:
+\begin{itemize}
+	\item DOS: denial-of-service.
+	\item R2L: unauthorized access from a remote machine.
+	\item U2R: unauthorized acces lo local superuser(root) privileges.
+	\item probing: surveillance and other probing, e.g: port scanning.
+\end{itemize}
+
+*The original dataset can be obtained visiting the following link: http://kdd.ics.uci.edu/databases/kddcup99/kddcup99.html
 %----------------------------------------------------------------------------------------
 %	SECTION 2
 %----------------------------------------------------------------------------------------
 
 \section{Related Work}
+The paper \textit{Cost-based Modeling and Evaluation for Data Mining With Application to Fraud and Intrusion Detection Results from the JAM Project by Salvatore J. Stolfo, Wei Fun, Wenke Lee, Andreas Prodromids and Philip`K. Chan.} from the Florida Institute of Technology talks about JAM project. \\
+The paper describes the results achieved using a JAM distributed data mining system for the problem of fraud detection in financial information systems. \\
 
+Other work related with \textit{network intrussion} problem was reported by Ramesh Agarwal and Mahesh V. Joshi. They described a rule called \textit{PN-rule} which is a framework for learning classifier models and it's study case was network intrussion detection. In the following paper you can read more about this project: PNrule: A New
+Framework for Learning
+Classifier Models in Data
+Mining (A Case-Study in
+Network Intrusion
+Detection)
+by 
+Ramesh Agarwal and Mahesh V. Joshi
 %----------------------------------------------------------------------------------------
 %	SECTION 3
 %----------------------------------------------------------------------------------------
@@ -113,9 +136,39 @@ Now we have this categorization so we don't need attack type any more but we sav
 We'll proceed to do a descriptive analysis of our data. To make our graphs more beautiful we use \textit{ggplot2}\cite{ggplot}. For every numerical variable we do a histogram and a boxplot. We realize that most variables don't have any.
 \subsection{Visualization}
 \subsection{Clustering}
+In this section we'll perform a clustering analysis in order to see natural groupings of data in our dataset.  \\
+We'll use \textit{k-means} algorithm to perform clustering process. Our goal is to see what number of clusters gives us a better explanation of natural groupings in our dataset. \\
+To determine which is the best number of clusters, we'll use \textit{Calinski-Harabasz} and  \textit{likelihood} index that gives us information about the quality of a cluster.
+With a first look, we've seen that the best number of clusters could be between 40 and 50 clusters. \\
+To see it, we'll carry out an experiment whith the following steps:
+\begin{enumerate}
+	\item With our dataset preprocessed, we'll execute K-means 20 times, one for each value of(K) in range [40..51] and we'll calculate Calinski-Harabasz index for each execution.
+	\item Same process for likelihood index.
+	\item Take the mean of 20 executions for each value with Calinski-Harabasz index and plot it.
+	\item Same process for likelihood index.
+	\item Analyse results and extract conlcusions.
+\end{enumerate}
 
 
-\medskip
+
+The following figures contains the plots that shows the result of the experiment explained before. Figure \ref{calinski} shows the means of the Calinski-Harabasz index for the 20 exectuions of k-means. Figure \ref{likelihood} shows the results for likelihood index. \\
+
+As we can see, Calinski-Harabasz index indicates that better number of clusters is 50 but on the other hand likelihood index indicates that 48 is the best number of clusters. \\
+Although we may consider that the best number of clusters is in range between 48 and 50 clusters, if we compare the behavior of the two index, it is clear that it is quite different. \\
+We don't know the reason of these different behaviors, but we think that with more executions it could be solved due to random initialization of k-means algorithm leads the index to take unsual values.
+\begin{figure}
+	\label{calinski}
+\includegraphics[scale = 0.75]{../../plots/Calinski}
+	\caption{Number of clusters vs Calinski-Harabasz index}
+\end{figure}
+
+
+\begin{figure}
+	\label{likelihood}
+	\includegraphics[scale = 0.75]{../../plots/likelihood}
+	\caption{Number of clusters vs likelihood index}
+\end{figure}
+
 %----------------------------------------------------------------------------------------
 %	BIBLIOGRAPHY
 %----------------------------------------------------------------------------------------
