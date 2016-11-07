@@ -60,7 +60,7 @@ categoricalVars <- categoricalVars[1:9]
 
 #All Categorical as factors
 netData[categoricalVars[]] <- lapply(netData[categoricalVars[]],factor)
-testData[categoricalVars[1:8]] <- lapply(testData[categoricalVars[1:8]],factor)
+testData[,categoricalVars[2:9]] <- lapply(testData[categoricalVars[2:9]],factor)
 
 #Boolen categoricals with bools
 levels(netData[,"land"]) <- c(F,T)
