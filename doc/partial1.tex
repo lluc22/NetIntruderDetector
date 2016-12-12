@@ -68,7 +68,7 @@ Universitat Politècnica de Barcelona} % Title
 
 
 %----------------------------------------------------------------------------------------
-%	SECTION 1
+%	INTRO
 %----------------------------------------------------------------------------------------
 
 \section{Introduction}
@@ -87,7 +87,7 @@ There are four main attack categories which the system have to identify apart fr
 
 *The original dataset can be obtained visiting the following link: http://kdd.ics.uci.edu/databases/kddcup99/kddcup99.html
 %----------------------------------------------------------------------------------------
-%	SECTION 2
+%	Related
 %----------------------------------------------------------------------------------------
 
 \section{Related Work}
@@ -103,7 +103,7 @@ Detection)
 by 
 Ramesh Agarwal and Mahesh V. Joshi
 %----------------------------------------------------------------------------------------
-%	SECTION 3
+%	Data exploration
 %----------------------------------------------------------------------------------------
 
 \section{Data Exploration Process}
@@ -207,7 +207,7 @@ We don't know the reason of these different behaviors, but we think that with mo
 \begin{figure}[H]
 	\centering
 	\label{calinski}
-\includegraphics[scale = 0.25]{../../plots/Calinski}
+%\includegraphics[scale = 0.25]{../../plots/Calinski}
 	\caption{Number of clusters vs Calinski-Harabasz index}
 \end{figure}
 
@@ -215,10 +215,97 @@ We don't know the reason of these different behaviors, but we think that with mo
 \begin{figure}[H]
 	\centering
 	\label{likelihood}
-	\includegraphics[scale = 0.25]{../../plots/likelihood}
+	%\includegraphics[scale = 0.25]{../../plots/likelihood}
 	\caption{Number of clusters vs likelihood index}
 \end{figure}
 
+
+
+
+%----------------------------------------------------------------------------------------
+%	Data exploration
+%----------------------------------------------------------------------------------------
+
+\section{Classification}
+\subsection{Linear Methods}
+\subsubsection{Logistic regression}
+In this section we will show our experiments done using logistic regression. \\
+In this case we decide to simplify the problem. Instead of using a multiclass problem, we'll face a problem that is predict if a connection is \textit{attack} or \textit{normal connection}. \\
+
+First of all, we'll train a model using \textit{logistic regression} with our original dataset and also test it with our original test data.
+We also used the AIC index in order to simplify the computations.\\
+In logistic regression(binary) there is a parameter which we will call \textit{P} (between 0 to 1) who determines the relevance of either one factor or the other one(in our case: normal connection or attack connection). In this case, the higger P, the higger relevance of normal connections. \\
+With our trained model we'll try which value of \textit{P} gives us better results. \\
+* We tried values of P in range(0.4,0.7) by 0.1 because we observed that they are the more reasonable after doing several experiments.
+\begin{table}[h]
+	\centering
+	\caption{Train and test errors depending on P}
+	\label{my-label}
+	\begin{tabular}{lllll}
+		P              & 0.4  & 0.5   & 0.6   & 0.7   \\
+		Training error & 30.4 & 30.46 & 30.54 & 30.63 \\
+		Test error     & 7.67 & 7.71  & 7.75  & 7.79 
+	\end{tabular}
+\end{table}
+
+If we observe the values in the table, it seems that when P=0.4 the model gives better results due to it gives lower test and train errors. \\
+In our particular problem we not only have to take account test and train errors. It seems obvious that is better to predict a normal connection as an attack than the reverse. So we also must observe the confusion matrix to see for what P we have less attacks predicted as a normal connection.
+
+\begin{table}[h]
+	\centering
+	\caption{Confussion matrix of logistic regression model with P = 0.5}
+	\label{my-label}
+	\begin{tabular}{lll}
+		& Pred   &        \\
+		Truth  &        &        \\
+		& normal & attack \\
+		normal & 59526  & 1063   \\
+		attack & 22790  & 227646
+	\end{tabular}
+\end{table}
+
+In the table above we can see the confusion matrix with P = 0.4 which is also the value of P which gives better results. We can observe that the model predicted wrong 10.08\% over all attack connection in the test data. \\
+To conclude this section, we can see that logistic regression works better when we give higher relevance to attack connections.
+
+\subsubsection{Multinomial regression}
+We tried to apply a multinomial regression to our data. We knew that our data is unbalanced but we first tried to train the classifier without treating the data. We get a training error of 0.05\%, and a test error of 7.79\%,. Although the test error percentage is low the minority classes like \textit{U2R} or \textit{R2L} are badly generalized, as table \ref{table:unbModel} shows. A high percentage of \textit{U2R} attacks are miss-predicted, and they are the most dangerous ones. Furthermore, they are mostly predicted as normal connections so it would be probable that the attack would stay unnoticed until it would be too late. 
+
+\begin{table}[H]
+	\centering
+	\begin{tabular}{c | c c c c c}
+		& Normal & DOS & Probe & R2L & U2R \\
+		\hline
+		Normal	& 59511	& 95 	 & 953	 & 16 	& 14 \\
+		DOS		& 5925	& 223563 & 135	 & 0  	& 807\\
+		Probe	& 625	& 163	 & 3125	 & 253	& 0 \\
+		R2L		& 15588	& 0		 & 8   & 568 	& 25\\
+		U2R		& 190	& 0		 & 0    & 11 	& 27\\	
+	\end{tabular}
+	\caption{Contingency table of the model that uses all the data}
+	\label{table:unbModel}
+\end{table}
+
+
+One solution for unbalanced datasets is to undersample the biggest classes. We tried this solution, we used a balanced but reduced dataset. Then we applied regularization and determined the constant $\lambda$ and the data samples with 10-cross-validation. The training error for this model is 1.85\% and the test error is 8.06\%.
+
+
+\begin{table}[H]
+	\centering
+	\begin{tabular}{c | c c c c c}
+				& Normal & DOS & Probe & R2L & U2R \\
+		\hline
+		Normal	& 59055	& 66 	 & 539	 & 122 	& 807 \\
+		DOS		& 7349	& 222221 & 225	 & 0  	& 58\\
+		Probe	& 229	& 50	 & 3857	 & 0	& 30 \\
+		R2L		& 14838	& 1		 & 305   & 688 	& 357\\
+		U2R		& 79	& 0		 & 35    & 1 	& 113\\	
+	\end{tabular}
+	\caption{Contingency table of the under-sampled regularized 10CV multinomial model}
+	\label{table:sub10model}
+\end{table}
+
+Table \ref{table:sub10model} shows the contingency table of the model. The horizontal header is the model prediction and the vertical one is the real classification. Test dataset is used in order to produce this table so the results show how well generalizes the model. Although test error is worse in than the unbalanced model, predictions of the less populated classes are more accurate, in general. We observe that 28\% of the connections that are predicted as normal ones are indeed network attacks, so the number of false negatives is quite big. Nevertheless the proportion of 
+\subsection{Non Linear Methods}
 
 %----------------------------------------------------------------------------------------
 %	BIBLIOGRAPHY
