@@ -17,6 +17,7 @@
 netData <- read.csv("data/initialData.csv", header=FALSE, quote="") 
 testData <- read.csv("data/initialTestData.csv", header=FALSE, quote="") 
 dim(netData)
+dim(testData)
 
 names(netData)
 #First thing we see that the variables have no name. We fix this:
@@ -39,7 +40,7 @@ colnames(testData) <- c("duration","protocol_type","service","flag","src_bytes",
                        "same_srv_rate","diff_srv_rate","srv_diff_host_rate","dst_host_count","dst_host_srv_count",
                        "dst_host_same_srv_rate","dst_host_diff_srv_rate","dst_host_same_src_port_rate",
                        "dst_host_srv_diff_host_rate","dst_host_serror_rate","dst_host_srv_serror_rate",
-                       "dst_host_rerror_rate","dst_host_srv_rerror_rate")
+                       "dst_host_rerror_rate","dst_host_srv_rerror_rate","attack_type")
 
 #This variable is our target
 summary(netData$attack_type)
@@ -48,6 +49,10 @@ table(netData$attack_type)
 #Delete final dot
 levels(netData$attack_type) <- substr(levels(netData$attack_type),1,nchar(levels(netData$attack_type))-1)
 table(netData$attack_type)
+
+levels(testData$attack_type) <- substr(levels(testData$attack_type),1,nchar(levels(testData$attack_type))-1)
+table(testData$attack_type)
+
 
 categoricalVars <- c("attack_type","protocol_type","service","flag","land","root_shell","su_attempted","logged_in","is_guest_login","is_host_login")
 for (c in categoricalVars){print(c);print(table(netData[c]))}
@@ -60,7 +65,7 @@ categoricalVars <- categoricalVars[1:9]
 
 #All Categorical as factors
 netData[categoricalVars[]] <- lapply(netData[categoricalVars[]],factor)
-testData[,categoricalVars[2:9]] <- lapply(testData[categoricalVars[2:9]],factor)
+testData[,categoricalVars[]] <- lapply(testData[categoricalVars[]],factor)
 
 #Boolen categoricals with bools
 levels(netData[,"land"]) <- c(F,T)
@@ -109,13 +114,14 @@ testData$num_outbound_cmds <- NULL
 #  +-------------+------------------------------------------------------------------------+
 #  | Main Attack | Attack Type                                                            |
 #  +=============+========================================================================+
-#  | DOS         | back,land,neptune,smurf,teardrop                                       |
+#  | DOS         | back,land,neptune,smurf,teardrop,apache2,mailbomb,processtable         |
 #  +-------------+------------------------------------------------------------------------+
-#  | U2R         | buffer_overflow,loadmodule,perl,rootkit                                |
+#  | U2R         | buffer_overflow,loadmodule,perl,rootkit,httptunnel,ps,sqlattack,xterm  |
 #  +-------------+------------------------------------------------------------------------+
-#  | R2L         | ftp_write,guess_passwd,imap,multihop,phf,spy,warezclient,warezmaster   |
+#  | R2L         | ftp_write,guess_passwd,imap,multihop,phf,spy,warezclient,warezmaster , |
+#  |             | sendmail, named, snmpgetattack,snmpguess, xlock, xsnoop, worm          |
 #  +-------------+------------------------------------------------------------------------+
-#  | probe       | ipsweep,nmap,portsweep,satan                                           |
+#  | probe       | ipsweep,nmap,portsweep,satan,mscan,saint                               |
 #  +-------------+------------------------------------------------------------------------+
 #  | normal      | normal                                                                 |
 #  +-------------+------------------------------------------------------------------------+
@@ -123,10 +129,26 @@ testData$num_outbound_cmds <- NULL
 main_attack <- as.character(netData$attack_type)
 main_attack <-replace(main_attack,main_attack %in% c("back","land","neptune","pod","smurf","teardrop"),"dos")
 main_attack <-replace(main_attack,main_attack %in% c("buffer_overflow","loadmodule","perl","rootkit"),"u2r")
-main_attack <-replace(main_attack,main_attack %in% c("ftp_write","guess_passwd","imap","multihop","phf","spy","warezclient","warezmaster"),"r2l")
+main_attack <-replace(main_attack,main_attack %in% c("ftp_write","guess_passwd","imap","multihop","phf"
+                                                     ,"spy","warezclient","warezmaster"),"r2l")
 main_attack <-replace(main_attack,main_attack %in% c("ipsweep","nmap","portsweep","satan"),"probe")
 table(main_attack)
 netData$main_attack <- factor(main_attack)
+
+main_attack <- as.character(testData$attack_type)
+main_attack <-replace(main_attack,main_attack %in% c("back","land","neptune","pod","smurf","teardrop"),"dos")
+main_attack <-replace(main_attack,main_attack %in% c("buffer_overflow","loadmodule","perl","rootkit"),"u2r")
+main_attack <-replace(main_attack,main_attack %in% c("ftp_write","guess_passwd","imap","multihop","phf"
+                                                     ,"spy","warezclient","warezmaster"),"r2l")
+main_attack <-replace(main_attack,main_attack %in% c("ipsweep","nmap","portsweep","satan"),"probe")
+main_attack <-replace(main_attack,main_attack %in% c("apache2","mailbomb","processtable","udpstorm"),"dos")
+main_attack <-replace(main_attack,main_attack %in% c("httptunnel","ps","sqlattack","xterm"),"u2r")
+main_attack <-replace(main_attack,main_attack %in% c("sendmail", "named", "snmpgetattack","snmpguess",
+                                                     "xlock", "xsnoop", "worm"),"r2l")
+main_attack <-replace(main_attack,main_attack %in% c("mscan","saint"),"probe")
+table(main_attack)
+testData$main_attack <- factor(main_attack)
+
 
 
 ####################################################################
@@ -231,6 +253,10 @@ numericalVars <- colnames(netData)[!(colnames(netData) %in% categoricalVars)]
 #   
 # }
 
+#We apply logarithms
+netData[,numericalVars] = log(netData[,numericalVars] + 1)
+testData[,numericalVars] = log(testData[,numericalVars] + 1)
+
 
 #Bar charts for qualitative....
 for(i in categoricalVars){
@@ -267,7 +293,7 @@ netData <- netData[sample.int(nrow(netData)),] #We keep this just in case we wan
 
 save(netData.preprocessed, file = "netdataPreprocessed.Rdata")
 save(netData,file="netdata.Rdata")
-save(testData,file="testData.Rdata")
+save(testData.preprocessed,file="testDataPreprocessed.Rdata")
 
 rm(list = ls())
 ####################################################################
@@ -284,6 +310,7 @@ library(rgl)
 
 #We load the data
 load("data/netdataPreprocessed.Rdata")
+
 
 categoricalVars <- c("attack_type","protocol_type","service","flag","land","root_shell","su_attempted","logged_in","is_guest_login","main_attack")
 numericalVars <- colnames(netData.preprocessed)[!(colnames(netData.preprocessed) %in% categoricalVars)]
