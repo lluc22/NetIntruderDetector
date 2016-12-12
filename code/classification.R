@@ -9,7 +9,7 @@ rm(testData.preprocessed)
 
 library(nnet)
 
-multinom.model <- multinom (main_attack ~ ., data = netData)
+multinom.model <- multinom(main_attack ~ ., data = netData)
 multinom.train <- predict(multinom.model)
 
 #Training error
@@ -17,52 +17,60 @@ multinom.train <- predict(multinom.model)
 
 #Test Error
 testData <- testData[testData$service != "icmp",]
-multinom.test <- predict(multinom.model,newdata = testData)
+predict(multinom.model,testData)
 (1 - (sum(diag(table(testData$main_attack,multinom.test))) / length(testData$main_attack))) * 100
 
+table(netData$main_attack,multinom.train)
 #Looks good? look at the confusion matrix
 table(testData$main_attack,multinom.test)
 
-#Less frequent classes are less accuratly predicted. To solve this we use undersampling of the most frequent classes
-#and create subsets of data, a model for each subset and a model to predict classes based on the ouput of the sub-models
+
+multinom.model <- cv.glmnet(data.matrix(netData),netData$main_attack,family = "multinomial")
+multinom.train <- predict(multinom.model,type="class",newx=data.matrix(netData))
+
+#Training error
+(1 - (sum(diag(table(netData$main_attack,multinom.train))) / length(netData$main_attack))) * 100
+
+#Test Error
+predict(multinom.model,type="class",newx=data.matrix(testData))
+(1 - (sum(diag(table(testData$main_attack,multinom.test))) / length(testData$main_attack))) * 100
+
+table(netData$main_attack,multinom.train)
+#Looks good? look at the confusion matrix
+table(testData$main_attack,multinom.test)
 
 
+#Less frequent classes are less accuratly predicted. To solve this we use undersample the most used class
+library(glmnet)
 
-train_n_models <- function(n,model_func,...){
-  models <- vector("list",n)
-  for(i in 1:n){
-    sub.dos <- sample(row.names(netData[netData$main_attack == "dos",]),98000)
-    rows.subNet <- c(row.names(netData[!netData$main_attack %in% c("dos"),]),sub.dos)
-    sub.model <- model_func(main_attack ~ ., data = netData,subset=rows.subNet,...)
-    sub.train <- predict(sub.model,newdata = netData)
-    sub.test <- predict(sub.model,newdata = testData)
-    print(table(netData$main_attack,sub.train))
-    print(table(testData$main_attack,sub.test))
-    models[[i]] <- sub.model
+bestModel <- NULL
+minCV.error <- Inf
+for (i in 1:100){
+  sub.dos <- sample(row.names(netData[netData$main_attack == "dos",]),60)
+  sub.normal <- sample(row.names(netData[netData$main_attack == "normal",]),60)
+  sub.probe <- sample(row.names(netData[netData$main_attack == "probe",]),60)
+  sub.r2l <- sample(row.names(netData[netData$main_attack == "r2l",]),60)
+  rows.subNet <- c(row.names(netData[netData$main_attack == "u2r",]),sub.dos,sub.normal,sub.probe,sub.r2l)
+  sub.model <- cv.glmnet(data.matrix(netData[rows.subNet,-40]),netData[rows.subNet,"main_attack"],family = "multinomial")
+  cve <- tail(sub.model$cvm,n=1)
+  if(cve < minCV.error){
+    minCV.error = cve
+    bestModel <- sub.model
   }
-  return(models)
 }
+sub.train <- predict(bestModel,type="class",newx =data.matrix(netData[-40]))
+sub.test <- predict(bestModel,type="class",newx =data.matrix(testData[-40]))
 
-transform_data <- function(models,data){
-  model_out <- lapply(models,function(model){
-    predict(model,newdata=data,"probs")
-  })
-  newData <- data.frame(model_out,main_attack = data$main_attack)
-  newData
-}
+#Training error
+(1 - (sum(diag(table(netData$main_attack,sub.train))) / length(netData$main_attack))) * 100
 
-models <- train_n_models(1,multinom,trace=F)
-train <- transform_data(models,netData)
-test <- transform_data(models,testData)
-sub.model <- multinom (main_attack ~ ., data = train, MaxNWts = 3000)
-sub.train <- predict(sub.model)
-sub.test <- predict(sub.model,newdata = test)
+#Test Error
+(1 - (sum(diag(table(testData$main_attack,sub.test))) / length(testData$main_attack))) * 100
+
+
 table(netData$main_attack,sub.train)
 table(testData$main_attack,sub.test)
 
-reg.model <- multinom(main_attack ~., data = train, decay=0.01)
-reg.train <- predict(reg.model)
-reg.test <- predict(reg.model,newdata = test)
-table(netData$main_attack,reg.train)
-table(testData$main_attack,reg.test)
+
+
 
