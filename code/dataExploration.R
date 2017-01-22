@@ -280,6 +280,20 @@ barplot.percent(netData,main_attack,flag,col=1,main="flag vs main_attack")
 barplot.percent(netData,main_attack,su_attempted,main="main_attack vs su_attempted")
 barplot.percent(netData,main_attack,su_attempted,col=1,main="su_attempted vs main_attack")
 detach(netData)
+
+
+#We have a clearly unbalanced dataset, we aply undersampling and SMOTE algorithm to generate new data
+library(DMwR)
+#UNDERSAMPLE
+sub.dos <- sample(row.names(netData[netData$main_attack == "dos",]),1500)
+sub.normal <- sample(row.names(netData[netData$main_attack == "normal",]),1500)
+sub.probe <- sample(row.names(netData[netData$main_attack == "probe",]),1500)
+sub.r2l <- row.names(netData[netData$main_attack == "r2l",])
+rows.subNet <- c(row.names(netData[netData$main_attack == "u2r",]),sub.dos,sub.normal,sub.probe,sub.r2l)
+
+#GENERATE NEW DATA
+netDataSmall <- SMOTE(main_attack ~ .,data=netData[rows.subNet,],perc.over=2900,perc.under=500)
+
 ####################################################################
 # Save final preprocessed data
 ####################################################################
@@ -289,11 +303,12 @@ netData.preprocessed <- netData.preprocessed[sample.int(nrow(netData.preprocesse
 testData.preprocessed <- testData[,colnames(testData)!= "attack_type"]
 testData.preprocessed <- testData.preprocessed[sample.int(nrow(testData.preprocessed)),] #This is the final test data
 
-netData <- netData[sample.int(nrow(netData)),] #We keep this just in case we want to use the specific atack as a classifier
+netDataSmall <- netDataSmall[,colnames(netDataSmall)!= "attack_type"]
+netDataSmall <- netDataSmall[sample.int(nrow(netDataSmall)),] #This is the final data
 
 save(netData.preprocessed, file = "netdataPreprocessed.Rdata")
-save(netData,file="netdata.Rdata")
 save(testData.preprocessed,file="testDataPreprocessed.Rdata")
+save(netDataSmall,file="netDataSmall.Rdata")
 
 rm(list = ls())
 ####################################################################
@@ -340,28 +355,12 @@ loadings.plot <- function (loadings,main="")
 }
 
 #Plot loadings
-loadings.plot(netData.loglda,"LDA model")
+loadings.plot(netData.lda,"LDA model")
 
 plot3d(loadings[,1], loadings[,2], loadings[,3], "LD1", "LD2", "LD3",
        size = 4, col=palette()[unclass(main_attack)])
 legend3d("topright",legend=levels(main_attack),pch = 16, col = palette(), cex=1, inset=c(0.02))
 
-
-
-
-(lda.logmodel <- lda (x=log(netData + 1), grouping=main_attack))
-#Trace representation: LD1 + LD2 = 98.49%, so it is sligthly better!
-
-loadings.log <- as.matrix(log(netData + 1)) %*% as.matrix(lda.logmodel$scaling)
-netData.loglda <- data.frame (loadings.log, main_attack)
-
-#Plot loadings
-loadings.plot(netData.loglda,"LDA with log-transformation")
-
-# 3D scatterplot (can be rotated and zoomed in/out with the mouse)
-plot3d(loadings.log[,1], loadings.log[,2], loadings.log[,3], "LD1", "LD2", "LD3",
-       size = 4, col=palette()[unclass(main_attack)])
-legend3d("topright",legend=levels(main_attack),pch = 16, col = palette(), cex=1, inset=c(0.02))
 
 
 ####################################################################
