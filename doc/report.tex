@@ -58,7 +58,7 @@ sorting=ynt
 
 \title{Network Intruder Detection \\
 \large APA Practical Work \\
-Universitat Politècnica de Barcelona} % Title
+Universitat Politècnica de Catalunya} % Title
 \author{Lluc Bové \& Aleix Trasserra} % Author name
 
 \date{Q1 2016-17}
@@ -73,16 +73,17 @@ Universitat Politècnica de Barcelona} % Title
 %----------------------------------------------------------------------------------------
 
 \section{Introduction}
-In the are of \textit{computer security}, one of the current works is to protect computer networks from unauthorized users. \\
-The goal of this work is to build a system capable of predict if a connection is an \textit{intrussion} ()and which kind of intrussion) or if it is a normal connection.  
+In the area of \textit{computer security}, one of the current works is to protect computer networks from unauthorized users. \\
+The goal of this work is to build a system capable of predicting if a connection is an \textit{intrusion} (and what kind of intrusion) or if it is a normal connection. 
+ 
 \subsection{The data}
 Our dataset\footnote{The original dataset can be obtained visiting the following link:\\  http://kdd.ics.uci.edu/databases/kddcup99/kddcup99.html} is a set of \textbf{connection records}.
 A \textbf{connection} is a set of TCP packets starting and ending at some well defined times, between which data flows from a \textit{source IP} address to a \textit{target IP} address under some well defined \textit{protocol}.
-There are four main attack categories which the system have to identify apart from \textit{normal connections}:
+There are four main attack categories that our system will classify other than \textit{normal connections}:
 \begin{itemize}
 	\item DOS: denial-of-service.
 	\item R2L: unauthorized access from a remote machine.
-	\item U2R: unauthorized acces lo local superuser(root) privileges.
+	\item U2R: unauthorized access to local superuser(root) privileges.
 	\item probing: surveillance and other probing, e.g: port scanning.
 \end{itemize}
 
@@ -95,14 +96,7 @@ There are four main attack categories which the system have to identify apart fr
 The paper \textit{Cost-based Modeling and Evaluation for Data Mining With Application to Fraud and Intrusion Detection Results from the JAM Project by Salvatore J. Stolfo, Wei Fun, Wenke Lee, Andreas Prodromids and Philip`K. Chan.} from the Florida Institute of Technology talks about JAM project. \\
 The paper describes the results achieved using a JAM distributed data mining system for the problem of fraud detection in financial information systems. \\
 
-Other work related with \textit{network intrussion} problem was reported by Ramesh Agarwal and Mahesh V. Joshi. They described a rule called \textit{PN-rule} which is a framework for learning classifier models and it's study case was network intrussion detection. In the following paper you can read more about this project: PNrule: A New
-Framework for Learning
-Classifier Models in Data
-Mining (A Case-Study in
-Network Intrusion
-Detection)
-by 
-Ramesh Agarwal and Mahesh V. Joshi
+Other work related with \textit{network intrussion} problem was reported by Ramesh Agarwal and Mahesh V. Joshi. They described a rule called \textit{PN-rule} which is a framework for learning classifier models and its study case was network intrusion detection.
 %----------------------------------------------------------------------------------------
 %	Data exploration
 %----------------------------------------------------------------------------------------
@@ -172,101 +166,62 @@ To do visualization we use the Fisher Discriminant Analysis or FDA. We apply it 
 \begin{figure}[H]
 	\centering
 	\includegraphics[scale=0.45]{LDA.png}
-	\caption{Barplots for all categorical variables}
+	\caption{LDA visualization}
 	\label{fig:fda}
 \end{figure}
 
-\begin{figure}[H]
-	\centering
-	\includegraphics[scale=0.45]{LDA_log.png}
-	\caption{Barplots for all categorical variables}
-	\label{fig:fda_log}
-\end{figure}
-The classes don't seem very separated. In fact, if we didn't use colours we wouldn't have seen the classes separated. This indicates us that the prediction task can be a big challenge. We decided to apply logarithms to all the variables and try the analysis again, the result is in \ref{fig:fda_log}. This representation is slightly better but not very good though. The trace of the two first components sum 98.49\%, and without the $log$ 98.02\%. So this projection is more accurate with 2 dimensions. 
-
-\subsection{Clustering}
-In this section we'll perform a clustering analysis in order to see natural groupings of data in our dataset.  \\
-We'll use \textit{k-means} algorithm to perform clustering process. Our goal is to see what number of clusters gives us a better explanation of natural groupings in our dataset. \\
-To determine which is the best number of clusters, we'll use \textit{Calinski-Harabasz} and  \textit{likelihood} index that gives us information about the quality of a cluster.
-With a first look, we've seen that the best number of clusters could be between 40 and 50 clusters. \\
-To see it, we'll carry out an experiment whith the following steps:
-\begin{enumerate}
-	\item With our dataset preprocessed, we'll execute K-means 20 times, one for each value of(K) in range [40..51] and we'll calculate Calinski-Harabasz index for each execution.
-	\item Same process for likelihood index.
-	\item Take the mean of 20 executions for each value with Calinski-Harabasz index and plot it.
-	\item Same process for likelihood index.
-	\item Analyse results and extract conlcusions.
-\end{enumerate}
-
-
-
-The following figures contains the plots that shows the result of the experiment explained before. Figure \ref{calinski} shows the means of the Calinski-Harabasz index for the 20 exectuions of k-means. Figure \ref{likelihood} shows the results for likelihood index. \\
-
-As we can see, Calinski-Harabasz index indicates that better number of clusters is 50 but on the other hand likelihood index indicates that 48 is the best number of clusters. \\
-Although we may consider that the best number of clusters is in range between 48 and 50 clusters, if we compare the behavior of the two index, it is clear that it is quite different. \\
-We don't know the reason of these different behaviors, but we think that with more executions it could be solved due to random initialization of k-means algorithm leads the index to take unsual values.
-\begin{figure}[H]
-	\centering
-	\label{calinski}
-%\includegraphics[scale = 0.25]{../../plots/Calinski}
-	\caption{Number of clusters vs Calinski-Harabasz index}
-\end{figure}
-
-
-\begin{figure}[H]
-	\centering
-	\label{likelihood}
-	%\includegraphics[scale = 0.25]{../../plots/likelihood}
-	\caption{Number of clusters vs likelihood index}
-\end{figure}
+The classes don't seem very separated. In fact, if we didn't use colours we wouldn't have seen the classes separated. This indicates us that the prediction task can be a big challenge. The trace of the two first components sum 98.49\%.
 
 
 
 
 %----------------------------------------------------------------------------------------
-%	Data exploration
+%	Classification
 %----------------------------------------------------------------------------------------
 
 \section{Classification}
 \subsection{Linear Methods}
 \subsubsection{Logistic regression}
 In this section we will show our experiments done using logistic regression. \\
-In this case we decide to simplify the problem. Instead of using a multiclass problem, we'll face a problem that is predict if a connection is \textit{attack} or \textit{normal connection}. \\
+Logistic regression must be trained with a binary classification so we transformed our data, so that the target variable classification will be \textit{normal connection} or \textit{attack}.
 
-First of all, we'll train a model using \textit{logistic regression} with our original dataset and also test it with our original test data.
-We also used the AIC index in order to simplify the computations.\\
-In logistic regression(binary) there is a parameter which we will call \textit{P} (between 0 to 1) who determines the relevance of either one factor or the other one(in our case: normal connection or attack connection). In this case, the higger P, the higger relevance of normal connections. \\
-With our trained model we'll try which value of \textit{P} gives us better results. \\
-* We tried values of P in range(0.4,0.7) by 0.1 because we observed that they are the more reasonable after doing several experiments.
+First of all, we'll train a model using \textit{logistic regression} with our original dataset, which we know that is unbalanced.
+We also used the AIC index in order to simplify the model.\\
+We use \textit{P} to denote the cut value of the logistic regression.
+With our trained model we'll try which value of \textit{P} gives us better results, keeping in mind that we prefer a normal connection to be detected as an attack(false positive) rather than an attack predicted as a normal connection (false negative)  \\
+We tried different values of P in the range of (0.4,0.7) in steps of 0.1.
 \begin{table}[h]
 	\centering
-	\caption{Train and test errors depending on P}
-	\label{my-label}
-	\begin{tabular}{lllll}
+	\begin{tabular}{l|llll}
 		P              & 0.4  & 0.5   & 0.6   & 0.7   \\
+		\hline 
 		Training error & 30.4 & 30.46 & 30.54 & 30.63 \\
 		Test error     & 7.67 & 7.71  & 7.75  & 7.79 
 	\end{tabular}
+	\caption{Train and test errors depending on P}
+	\label{cut}
 \end{table}
 
-If we observe the values in the table, it seems that when P=0.4 the model gives better results due to it gives lower test and train errors. \\
-In our particular problem we not only have to take account test and train errors. It seems obvious that is better to predict a normal connection as an attack than the reverse. So we also must observe the confusion matrix to see for what P we have less attacks predicted as a normal connection.
+If we observe the values in table\ref{cut}, for P=0.4 the test and training error are the best ones. \\
+
+We observe the confusion matrix in order to analyse the classification more deeply.
 
 \begin{table}[h]
 	\centering
-	\caption{Confussion matrix of logistic regression model with P = 0.5}
-	\label{my-label}
-	\begin{tabular}{lll}
+	\begin{tabular}{l|ll}
 		& Pred   &        \\
 		Truth  &        &        \\
 		& normal & attack \\
+		\hline
 		normal & 59526  & 1063   \\
 		attack & 22790  & 227646
 	\end{tabular}
+	\caption{Confusion matrix of logistic regression model with P = 0.4}
+	\label{logistic}
 \end{table}
 
-In the table above we can see the confusion matrix with P = 0.4 which is also the value of P which gives better results. We can observe that the model predicted wrong 10.08\% over all attack connection in the test data. \\
-To conclude this section, we can see that logistic regression works better when we give higher relevance to attack connections.
+In table \ref{logistic} we can observe that the false-positive rate is 9.10\% and the true-positive rate is 1.75\%  . \\
+We observe that logistic regression works better when we give higher relevance to attack connections.
 
 \subsubsection{Multinomial regression}
 We tried to apply a multinomial regression to our data. We knew that our data is unbalanced but we first tried to train the classifier without treating the data. We get a training error of 0.05\%, and a test error of 7.79\%,. Although the test error percentage is low the minority classes like \textit{U2R} or \textit{R2L} are badly generalized, as table \ref{table:unbModel} shows. A high percentage of \textit{U2R} attacks are miss-predicted, and they are the most dangerous ones. Furthermore, they are mostly predicted as normal connections so it would be probable that the attack would stay unnoticed until it would be too late. 
@@ -274,7 +229,9 @@ We tried to apply a multinomial regression to our data. We knew that our data is
 \begin{table}[H]
 	\centering
 	\begin{tabular}{c | c c c c c}
-		& Normal & DOS & Probe & R2L & U2R \\
+		& Prediction\\
+		Truth\\
+		 & Normal & DOS & Probe & R2L & U2R \\
 		\hline
 		Normal	& 59511	& 95 	 & 953	 & 16 	& 14 \\
 		DOS		& 5925	& 223563 & 135	 & 0  	& 807\\
@@ -293,6 +250,8 @@ One solution for unbalanced datasets is to undersample the biggest classes. We t
 \begin{table}[H]
 	\centering
 	\begin{tabular}{c | c c c c c}
+			& Prediction\\
+		Truth\\
 				& Normal & DOS & Probe & R2L & U2R \\
 		\hline
 		Normal	& 59055	& 66 	 & 539	 & 122 	& 807 \\
@@ -306,7 +265,8 @@ One solution for unbalanced datasets is to undersample the biggest classes. We t
 \end{table}
 
 Table \ref{table:sub10model} shows the contingency table of the model. The horizontal header is the model prediction and the vertical one is the real classification. Test dataset is used in order to produce this table so the results show how well generalizes the model. Although test error is worse in than the unbalanced model, predictions of the less populated classes are more accurate, in general. We observe that 28\% of the connections that are predicted as normal ones are indeed network attacks, so the number of false negatives is quite big and most of them are of \textit{R2L} which is a dangerous attack. Nevertheless a little proportion of \textit{U2R} attacks are miss-predicted as normal connections. 
-\subsection{Non Linear Methods}
+
+%\subsection{Non Linear Methods}
 
 
 %----------------------------------------------------------------------------------------
