@@ -325,14 +325,16 @@ library(rgl)
 
 #We load the data
 load("data/netdataPreprocessed.Rdata")
-
+load("data/netDataSmall.Rdata")
 
 categoricalVars <- c("attack_type","protocol_type","service","flag","land","root_shell","su_attempted","logged_in","is_guest_login","main_attack")
 numericalVars <- colnames(netData.preprocessed)[!(colnames(netData.preprocessed) %in% categoricalVars)]
 
 #We separate the predicted variable from the others, and apply it with numerical variables
 main_attack <- netData.preprocessed$main_attack
+main_attack_small <- netDataSmall$main_attack
 netData <- netData.preprocessed[,numericalVars]
+netDataSmall <- netDataSmall[,numericalVars]
 
 (lda.model <- lda (x=netData, grouping=main_attack))
 #As we know, the probability of each attack is unequal. There are many DOS attacks and very little r2l and u2r attacks.
@@ -360,6 +362,25 @@ loadings.plot(netData.lda,"LDA model")
 plot3d(loadings[,1], loadings[,2], loadings[,3], "LD1", "LD2", "LD3",
        size = 4, col=palette()[unclass(main_attack)])
 legend3d("topright",legend=levels(main_attack),pch = 16, col = palette(), cex=1, inset=c(0.02))
+
+#Now we do the same with the reduced dataset
+
+(lda.model.small <- lda (x=netDataSmall, grouping=main_attack_small))
+
+sort(abs(lda.model.small$scaling[,1]))
+sort(abs(lda.model.small$scaling[,2]))
+
+
+loadings.small <- as.matrix(netDataSmall) %*% as.matrix(lda.model.small$scaling)
+netDataSmall.lda <- data.frame (loadings.small,main_attack=main_attack_small)
+
+
+#Plot loadings
+loadings.plot(netDataSmall.lda,"LDA model")
+
+plot3d(loadings.small[,1], loadings.small[,2], loadings.small[,3], "LD1", "LD2", "LD3",
+       size = 4, col=palette()[unclass(main_attack_small)])
+legend3d("topright",legend=levels(main_attack_small),pch = 16, col = palette(), cex=1, inset=c(0.02))
 
 
 
