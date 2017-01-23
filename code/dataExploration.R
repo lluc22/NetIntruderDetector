@@ -367,48 +367,66 @@ legend3d("topright",legend=levels(main_attack),pch = 16, col = palette(), cex=1,
 # CLUSTERING
 ####################################################################
 
+prep10 <- netDataSmall
 
-index.K <- function(Kaux,ind){ ### AQUI has de tocar
+numericalVariables <- subset(prep10, select = -c(main_attack,protocol_type,service,flag,land,root_shell,su_attempted,logged_in,is_guest_login))
+
+##### K-MEANS
+library (cclust)
+
+
+CH.K <- function(Kaux,Repeats){
   CH.K <- 0
-  for (i in 1:2) {
-    kmeans.K <- cclust (as.matrix(numericalVariables),Kaux,iter.max=100,method="kmeans",dist="euclidean")
-    (CH.K = CH.K + clustIndex(kmeans.K,numericalVariables, index=ind)) ## aqui has de canviar l'index
+  for (i in 1:Repeats) {
+    kmeans.K <- cclust (as.matrix(numericalVariables),Kaux,iter.max=200,method="kmeans",dist="euclidean")
+    (CH.K = CH.K + clustIndex(kmeans.K,numericalVariables, index="calinski")) ## aqui has de canviar l'index
   }
-  return(CH.K)
+  return(CH.K)/Repeats
 }
-############## Calinski-Harabasz #####################
 
-#res contains means of k-means executions for each value K
-res <- vector("numeric",12)
-res[2] = index.K(40,"calinski")/2
-res[3] = index.K(41,,"calinski")/2
-res[4] = index.K(42,"calinski")/2
-res[5] = index.K(43,"calinski")/2
-res[6] = index.K(44,"calinski")/2
-res[7] = index.K(45,"calinski")/2
-res[8] = index.K(46,"calinski")/2
-res[9] = index.K(47,"calinski")/2
-res[10] = index.K(48,"calinski")/2
-res[11] = index.K(49,"calinski")/2
-res[12] = index.K(50,"calinski")/2
 
-plot(labels,res,type = "l", ylab = "Calinski-Harabasz", xlab = "clusters", main = "Number of clusters vs Calinski-Harabasz index")
+# A res em guardo les mitjanes de l'experiment per tots els valors de K.
+res <- vector("numeric",10)
+res[1] = CH.K(2,50)
+res[2] = CH.K(3,50)
+res[3] = CH.K(4,50)
+res[4] = CH.K(5,50)
+res[5] = CH.K(6,50)
+res[6] = CH.K(7,50)
+res[7] = CH.K(8,50)
+res[8] = CH.K(9,50)
+res[9] = CH.K(10,50)
+res[10] = CH.K(11,50)
+plot(res,type = "l", main = "Nombre de clusters vs index de calinski", xlab = "clusters", ylab = "index C-H")
 
-############## likelihood #####################
 
-# resl contains means of k-means executions for each value K
-resl <- vector("numeric",12)
-resl[2] = index.K(40,"likelihood")/2
-resl[3] = index.K(41,"likelihood")/2
-resl[4] = index.K(42,"likelihood")/2
-resl[5] = index.K(43,"likelihood")/2
-resl[6] = index.K(44,"likelihood")/2
-resl[7] = index.K(45,"likelihood")/2
-resl[8] = index.K(46,"likelihood")/2
-resl[9] = index.K(47,"likelihood")/2
-resl[10] = index.K(48,"likelihood")/2
-resl[11] = index.K(49,"likelihood")/2
-resl[12] = index.K(50)/2
-labels <- c(40:51)
-plot(labels,resl,type = "l", ylab = "likelihood", xlab="clusters", main = "Number of clusters vs likelihood index")
+# we see that Calinski indexes say that 5 are the better number of clusters
 
+kmeans.k <- cclust(as.matrix(numericalVariables),5,iter.max = 500,method = "kmeans",dist = "euclidean")
+print(kmeans.k)
+clustIndex(kmeans.k,numericalVariables, index="calinski")
+
+
+#E-M clustering
+library(Rmixmod)
+library(MASS)
+
+fammodel <- mixmodGaussianModel (family="general", equal.proportions=FALSE)
+z <- mixmodCluster (numericalVariables,models = fammodel, nbCluster = 5)
+
+em.K <- function(K, Repeats, model) {
+  lh <- 0
+  for(i in 1:Repeats){
+    z <- mixmodCluster(numericalVariables,models = model, nbCluster = K)
+    lh <- lh + z@bestResult@likelihood
+  }
+  return(lh/Repeats)
+}
+
+fammodel <- mixmodGaussianModel (family="general", equal.proportions=FALSE)
+emRes = vector("numeric", 10)
+for(i in 1:10){
+  emRes[i] <- em.K(i + 1, 7, fammodel) 
+}
+
+plot(emRes,type = "l", main = "E-M clustering")
