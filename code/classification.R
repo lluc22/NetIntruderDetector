@@ -48,13 +48,7 @@ library(glmnet)
 
 #We use regularization and 10CV to select the best model.
 
-#Create sample of data
-#sub.dos <- sample(row.names(netData[netData$main_attack == "dos",]),70)
-#sub.normal <- sample(row.names(netData[netData$main_attack == "normal",]),70)
-#sub.probe <- sample(row.names(netData[netData$main_attack == "probe",]),70)
-#sub.r2l <- sample(row.names(netData[netData$main_attack == "r2l",]),70)
-#rows.subNet <- c(row.names(netData[netData$main_attack == "u2r",]),sub.dos,sub.normal,sub.probe,sub.r2l)
-print(i)
+
 #By default the model uses regularization
 sub.model <- cv.glmnet(data.matrix(netDataSmall[,-40]),netDataSmall[,"main_attack"],family = "multinomial")
 cve <- tail(sub.model$cvm,n=1)
@@ -243,4 +237,171 @@ for (e in p){
   attack.accs(e,attackModel2.AIC)
   print("-----------------------------")
 }
+
+
+####################################################################
+#                        - NON-LINEAR CLASSIFICATION -
+#
+# The aim of this script is to perform non-linear classificaction with 2
+# different techniques: MLP and Random Forest
+#
+# Authors: Lluc Bové and Aleix Trasserra
+# Autumn 2016
+####################################################################
+
+
+####################################################################
+#                       -Random Forest-
+###################################################################
+#We Load the data
+load("data/netdataPreprocessed.Rdata")
+load("data/testDataPreprocessed.Rdata")
+load("data/netDataSmall.Rdata")
+netData <- netData.preprocessed
+testData <- testData.preprocessed
+rm(netData.preprocessed)
+rm(testData.preprocessed)
+
+library(randomForest)
+service <- netData$service
+serviceTest <- testData$service
+serviceSmall <- netDataSmall$service
+
+netData$service <- as.integer(service)
+testData$service <- as.integer(serviceTest)
+netDataSmall$service <- as.integer(serviceSmall)
+
+model.rf <- randomForest(main_attack ~ ., data = netData, ntree=100, proximity=FALSE)
+
+pred.rf <- predict (model.rf, testData[-40], type="class")
+
+(ct <- table(Truth=testData$main_attack, Pred=pred.rf))
+
+# percent by class
+prop.table(ct, 1)
+# total percent correct
+sum(diag(ct))/sum(ct)
+
+# real test error is 
+
+rf.error <- round(100*(1-sum(diag(ct))/sum(ct)),2)
+
+
+model.rf.small <- randomForest(main_attack ~ ., data = netDataSmall, ntree=100, proximity=FALSE)
+
+pred.rf.small <- predict (model.rf.small, testData[-40], type="class")
+
+(ct2 <- table(Truth=testData$main_attack, Pred=pred.rf.small))
+
+# percent by class
+prop.table(ct2, 1)
+# total percent correct
+sum(diag(ct2))/sum(ct2)
+
+# real test error is 
+
+rf.small.error <- round(100*(1-sum(diag(ct2))/sum(ct2)),2)
+
+ntrees <- round(10^seq(1,3.8,by=0.2))
+
+# prepare the structure to store the partial results
+rf.results <- matrix (rep(0,2*length(ntrees)),nrow=length(ntrees))
+colnames (rf.results) <- c("ntrees", "OOB")
+rf.results[,"ntrees"] <- ntrees
+rf.results[,"OOB"] <- 0
+
+ii <- 1
+
+for (nt in ntrees)
+{ 
+  print(nt)
+  
+  model.rf <- randomForest(main_attack ~ ., data = netDataSmall, ntree=nt, proximity=FALSE)
+  
+  # get the OOB
+  rf.results[ii,"OOB"] <- model.rf$err.rate[nt,1]
+  
+  ii <- ii+1
+}
+
+rf.results
+
+# choose best value of 'ntrees'
+
+lowest.OOB.error <- as.integer(which.min(rf.results[,"OOB"]))
+(ntrees.best <- rf.results[lowest.OOB.error,"ntrees"])
+
+model.final <- randomForest(main_attack ~ ., data = netDataSmall, ntree=ntrees.best, proximity=FALSE)
+
+pred.final <- predict (model.final, testData[-40], type="class")
+
+(ct3 <- table(Truth=testData$main_attack, Pred=pred.final))
+
+# percent by class
+prop.table(ct3, 1)
+# total percent correct
+sum(diag(ct3))/sum(ct3)
+
+# real test error is 
+
+(final.error <- round(100*(1-sum(diag(ct3))/sum(ct3)),2))
+
+####################################################################
+#                       -MLP-
+###################################################################
+#We Load the data
+load("data/testDataPreprocessed.Rdata")
+load("data/netDataSmall.Rdata")
+
+#first of all we need to scale the numerical variables in order to avoid premature convergence.
+categoricalVars <- c("attack_type","protocol_type","service","flag","land","root_shell","su_attempted","logged_in","is_guest_login","main_attack")
+numericalVars <- colnames(netDataSmall)[!(colnames(netDataSmall) %in% categoricalVars)]
+trainData <- netDataSmall
+testData <- testData.preprocessed
+testData <- testData[testData$service != "icmp",]
+for(i in 1:length(numericalVars)){
+  scale(trainData[numericalVars[i]])
+  scale(testData[numericalVars[i]])
+}
+
+
+#first look about the behaviour of neural networks in our DataSet.
+library(nnet)
+model.nnet <- nnet(main_attack ~ ., data = trainData, size=10,MaxNWts = 99999, maxit=1000, decay=0)
+
+#comput training error
+p1 <- as.factor(predict (model.nnet, type="class"))
+
+t1 <- table(p1,trainData$main_attack)
+error_rate.learn <- 100*(1-sum(diag(t1))/nrow(trainData))
+error_rate.learn
+
+
+# Compute test error
+
+p2 <- as.factor(predict (model.nnet, newdata=testData, type="class"))
+
+t2 <- table(p2,testData$main_attack)
+error_rate.test <- 100*(1-sum(diag(t2))/nrow(testData))
+error_rate.test
+
+# now we're going to perform CV with a fixed size= 20 and changing decays values
+library(caret)
+trc <- trainControl (method="repeatedcv", number=2, repeats=2)
+decays <- 10^seq(-1,0,by=0.1)
+model.10x10CV <- train (main_attack ~., data = trainData, method='nnet', maxit = 1000, trace = FALSE,
+                        tuneGrid = expand.grid(.size=20,.decay=decays),MaxNWts = 99999, trControl=trc)
+
+
+save(model.10x10CV, file = "model.10x10CV.regul")
+
+load ("model.10x10CV.regul")
+
+#test error
+p2 <- as.factor(predict (model10x10CV, newdata=testData, type="class"))
+
+t2 <- table(p2,testData$main_attack)
+error_rate.test <- 100*(1-sum(diag(t2))/nrow(testData))
+error_rate.test
+
 
